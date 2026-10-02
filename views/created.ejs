@@ -1,0 +1,16 @@
+<%- include('partials/head') %>
+<section class="center-stage">
+  <div class="eyebrow">A SMALL LINK. A NEW CONNECTION.</div>
+  <div class="flow-card">
+    <div class="success-icon" aria-hidden="true">✓</div>
+    <span class="pill accent">PASTE CREATED</span>
+    <h1>Ready to pass along.</h1><p>Your words have a home. Share the link below.</p>
+    <div class="paste-summary"><span class="document-icon" aria-hidden="true">≡</span><div><strong><%= paste.title || 'Untitled paste' %></strong><span>Plain text · Saved just like you wrote it</span></div></div>
+    <label class="field-label" for="share-url">YOUR SHAREABLE LINK</label>
+    <div class="share-field"><input id="share-url" readonly value="<%= shareUrl %>" aria-label="Shareable paste URL"><button class="button secondary" type="button" data-copy="share-url">Copy link</button></div>
+    <a class="button primary full" href="/p/<%= paste.id %>">Open paste <span aria-hidden="true">↗</span></a>
+    <a class="quiet-link" href="/">Create another paste</a>
+    <p class="fine-print">Anyone with this link can read it after the short gateway.<br>Pastes stay available until the site owner removes them.</p>
+  </div>
+</section>
+<%- include('partials/footer') %>

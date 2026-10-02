@@ -1,0 +1,7 @@
+node_modules/
+.npm-cache/
+.env
+data/
+backups/
+*.log
+test-results/

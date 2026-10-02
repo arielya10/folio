@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <meta name="description" content="A little space for your text. Create a paste, get a link, and pass it along.">
+  <title><%= title %> · Folio</title>
+  <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">
+  <script src="/assets/theme.js"></script>
+  <link rel="stylesheet" href="/assets/style.css">
+  <script src="/assets/app.js" defer></script>
+</head>
+<body>
+  <header class="site-header">
+    <a class="brand" href="/" aria-label="Folio home"><span class="brand-icon" aria-hidden="true">f.</span>folio<span class="brand-dot">/</span></a>
+    <nav aria-label="Main navigation">
+      <a class="nav-link <%= page === 'home' ? 'active' : '' %>" href="/">New paste <span aria-hidden="true">↗</span></a>
+      <span class="nav-divider" aria-hidden="true"></span>
+      <button class="theme-toggle" type="button" aria-label="Switch color theme" title="Switch color theme"><span aria-hidden="true">◐</span></button>
+    </nav>
+  </header>
+  <main>
