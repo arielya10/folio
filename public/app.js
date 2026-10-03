@@ -126,3 +126,31 @@ if (gateway) {
     form.submit();
   });
 }
+const nativeAd = $('[data-native-ad]');
+if (nativeAd) {
+  const container = nativeAd.querySelector('[data-native-ad-container]');
+  const notice = nativeAd.querySelector('[data-adblock-notice]');
+  const bait = document.createElement('div');
+  bait.className = 'ad-detection-bait adsbox ad-banner ad-unit';
+  bait.setAttribute('aria-hidden', 'true');
+  document.body.appendChild(bait);
+
+  const hasRenderedAd = () => Boolean(container?.children.length && container.getBoundingClientRect().height > 20);
+  const showResult = () => {
+    const baitStyle = getComputedStyle(bait);
+    const baitBlocked = bait.offsetHeight === 0 || bait.offsetWidth === 0 || baitStyle.display === 'none' || baitStyle.visibility === 'hidden';
+    if (hasRenderedAd()) {
+      notice.hidden = true;
+      nativeAd.classList.remove('ad-unavailable');
+    } else if (baitBlocked || !container?.children.length) {
+      notice.hidden = false;
+      nativeAd.classList.add('ad-unavailable');
+    }
+  };
+
+  const observer = new MutationObserver(showResult);
+  if (container) observer.observe(container, { childList: true, subtree: true });
+  setTimeout(() => { showResult(); bait.remove(); }, 6000);
+  setTimeout(() => observer.disconnect(), 30000);
+  nativeAd.querySelector('[data-reload-page]')?.addEventListener('click', () => location.reload());
+}

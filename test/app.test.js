@@ -153,6 +153,8 @@ test('native banner renders only for public viewers and extends CSP to its revie
   const viewer = await reader.get(`/p/${id}/view`).expect(200);
   assert.ok(viewer.text.includes('https://ads.example/native/unit'));
   assert.ok(viewer.text.includes('id="native-unit"'));
+  assert.ok(viewer.text.includes('data-adblock-notice'));
+  assert.ok(viewer.text.includes('pause it for Folio'));
   assert.match(viewer.headers['content-security-policy'], /script-src 'self' https:\/\/ads\.example/);
 });
 
