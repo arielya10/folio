@@ -84,6 +84,7 @@ export function pasteRoutes(config, db, auth) {
     const paste = content.get(req.paste.id);
     res.render('viewer', { title: paste.title || 'Untitled paste', paste, shareUrl: `${config.origin}/p/${paste.id}`,
       byteSize: Buffer.byteLength(paste.content, 'utf8'), lineCount: paste.content.split('\n').length,
+      nativeAd: req.owner ? null : config.nativeAd,
     });
   });
   router.get('/p/:id/raw', requireAccess, (req, res) => {

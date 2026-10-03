@@ -90,10 +90,12 @@ COOKIE_SECRET=KEEP_THE_RANDOM_VALUE_SAVED_BY_SETUP
 OWNER_PASSWORD_HASH=KEEP_THE_SCRYPT_HASH_SAVED_BY_SETUP
 DATABASE_PATH=./data/pastes.sqlite
 ADSTERRA_DIRECT_LINK=https://YOUR_EXACT_ADSTERRA_DIRECT_LINK
+ADSTERRA_NATIVE_SCRIPT=https://YOUR_EXACT_NATIVE_BANNER_SCRIPT_URL
+ADSTERRA_NATIVE_CONTAINER=YOUR_NATIVE_BANNER_CONTAINER_ID
 TRUST_PROXY=1
 ```
 
-Set `ADSTERRA_DIRECT_LINK=` to leave advertising off until you have your actual URL. Do not leave the example sponsor hostname in place. `APP_URL` must be just the origin, with no subpath. It determines generated links and allowed form origins. Do not put quotes around a URL containing `&` in a browser; the `.env` parser accepts it as a value. No real credentials belong in Git.
+Set `ADSTERRA_DIRECT_LINK=` to leave the gateway sponsor off. Set both Native Banner values or leave both empty; the banner appears only on public paste viewers. Do not leave example ad hostnames in place. `APP_URL` must be just the origin, with no subpath. It determines generated links and allowed form origins. Do not put quotes around a URL containing `&` in a browser; the `.env` parser accepts it as a value. No real credentials belong in Git.
 
 ```bash
 chmod 600 .env

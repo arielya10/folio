@@ -29,6 +29,8 @@ On Linux/macOS use `cp .env.example .env` instead of `Copy-Item`. Choose your ow
 | `OWNER_PASSWORD_HASH` | Salted scrypt hash used for the single owner account | Empty, which disables publishing |
 | `DATABASE_PATH` | SQLite database file location | `./data/pastes.sqlite` |
 | `ADSTERRA_DIRECT_LINK` | Optional HTTPS sponsor link; empty disables advertising | Empty |
+| `ADSTERRA_NATIVE_SCRIPT` | Optional HTTPS Native Banner loader URL | Empty |
+| `ADSTERRA_NATIVE_CONTAINER` | Container ID supplied with the Native Banner code | Empty |
 | `TRUST_PROXY` | Set to `1` only when using the supplied local Nginx reverse proxy | `0` |
 
 ## Owner workspace and timed deletion
@@ -102,6 +104,8 @@ After three seconds, clicking **Proceed to paste** opens the sponsor in a new ta
 When advertising is enabled, a blocked sponsor tab keeps the paste locked and shows a prompt to allow pop-ups. There is no visible bypass control, and the Proceed button stays disabled when JavaScript is unavailable. The site still cannot verify that a third-party page rendered successfully or guarantee a payable impression because Direct Links have no completion callback. Confirm your placement and traffic source with your Adsterra account requirements.
 
 Do not paste an arbitrary ad script into the page or disable the content-security policy to make one work. This implementation uses the requested Direct Link option. Integrating a different ad format would require reviewing its specific script domains and browser behavior.
+
+When both Native Banner settings are configured, the supplied unit renders below public paste viewers. Owner previews stay ad-free. The loader origin and its required delivery hosts are explicitly allowed by the Content Security Policy; other third-party scripts remain blocked.
 
 ## Operations and limits
 

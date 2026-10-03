@@ -10,6 +10,13 @@ import { purgeExpired } from './lib/database.js';
 
 export function createApp(config, db) {
   const app = express();
+  const nativeAdOrigin = config.nativeAd ? new URL(config.nativeAd.scriptUrl).origin : null;
+  const adScriptSources = nativeAdOrigin
+    ? [nativeAdOrigin, 'https://static.nresystems.com', 'https://aqml.org']
+    : [];
+  const adNetworkSources = nativeAdOrigin
+    ? [...adScriptSources, 'https://cdn.cloudvideosa.com']
+    : [];
   Object.assign(app.locals, { page: '', isOwner: false, ownerCsrf: '', assetVersion: Date.now().toString(36) });
   app.disable('x-powered-by');
   if (config.trustProxy) app.set('trust proxy', 'loopback');
@@ -17,8 +24,11 @@ export function createApp(config, db) {
   app.set('views', fileURLToPath(new URL('./views', import.meta.url)));
   app.use(helmet({
     contentSecurityPolicy: { directives: {
-      defaultSrc: ["'self'"], scriptSrc: ["'self'"], styleSrc: ["'self'"],
-      imgSrc: ["'self'"], fontSrc: ["'self'"], connectSrc: ["'self'"],
+      defaultSrc: ["'self'"], scriptSrc: ["'self'", ...adScriptSources],
+      styleSrc: nativeAdOrigin ? ["'self'", "'unsafe-inline'"] : ["'self'"],
+      imgSrc: nativeAdOrigin ? ["'self'", 'data:', 'https:'] : ["'self'"],
+      fontSrc: ["'self'"], connectSrc: ["'self'", ...adNetworkSources],
+      frameSrc: adNetworkSources,
       formAction: ["'self'"], frameAncestors: ["'none'"], objectSrc: ["'none'"],
       baseUri: ["'none'"], manifestSrc: ["'none'"],
       upgradeInsecureRequests: config.production ? [] : null,

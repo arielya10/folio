@@ -95,7 +95,7 @@ if (gateway) {
   const tick = () => {
     const remaining = Math.max(0, Math.ceil((readyAt - Date.now()) / 1000));
     proceed.disabled = remaining > 0;
-    proceed.textContent = 'Proceed to paste';
+    proceed.textContent = remaining ? `Wait ${remaining}s` : 'Proceed to paste';
     if (!remaining) clearInterval(timer);
   };
   const timer = setInterval(tick, 200);

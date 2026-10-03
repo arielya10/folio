@@ -119,6 +119,9 @@ test('expired tokens fail closed and production configuration validates URLs and
   assert.throws(() => readConfig({ NODE_ENV: 'production', APP_URL: 'https://example.com' }), /COOKIE_SECRET/);
   assert.throws(() => readConfig({ TRUST_PROXY: '2' }), /TRUST_PROXY/);
   assert.throws(() => readConfig({ ADSTERRA_DIRECT_LINK: 'javascript:alert(1)' }), /HTTPS/);
+  assert.throws(() => readConfig({ ADSTERRA_NATIVE_SCRIPT: 'https://ads.example/unit' }), /both/);
+  assert.throws(() => readConfig({ ADSTERRA_NATIVE_SCRIPT: 'javascript:alert(1)', ADSTERRA_NATIVE_CONTAINER: 'unit' }), /HTTPS/);
+  assert.throws(() => readConfig({ ADSTERRA_NATIVE_SCRIPT: 'https://ads.example/unit', ADSTERRA_NATIVE_CONTAINER: '<unit>' }), /unsupported/);
   assert.throws(() => readConfig({ APP_URL: 'https://example.com/subpath' }), /origin/);
 });
 
@@ -132,6 +135,25 @@ test('sponsor configuration requires a popup and renders no bypass control or ex
   assert.ok(bridge.text.includes('id="sponsor-error"'));
   assert.ok(!bridge.text.includes('Continue without it'));
   assert.ok(!bridge.text.includes('<script src="https://'));
+});
+
+test('native banner renders only for public viewers and extends CSP to its reviewed origin', async t => {
+  const nativeAd = { scriptUrl: 'https://ads.example/native/unit', containerId: 'native-unit' };
+  const { app } = setup(t, { nativeAd, waitMs: 10 });
+  const owner = request.agent(app);
+  const id = await create(owner);
+
+  const ownerView = await owner.get(`/p/${id}/view`).expect(200);
+  assert.ok(!ownerView.text.includes('https://ads.example/native/unit'));
+
+  const reader = request.agent(app);
+  const bridge = await reader.get(`/p/${id}`).expect(200);
+  await new Promise(resolve => setTimeout(resolve, 20));
+  await reader.post(`/p/${id}/unlock`).type('form').send({ token: extractToken(bridge.text) }).expect(303);
+  const viewer = await reader.get(`/p/${id}/view`).expect(200);
+  assert.ok(viewer.text.includes('https://ads.example/native/unit'));
+  assert.ok(viewer.text.includes('id="native-unit"'));
+  assert.match(viewer.headers['content-security-policy'], /script-src 'self' https:\/\/ads\.example/);
 });
 
 test('theme bootstrap falls back safely without browser storage or matchMedia support', () => {
