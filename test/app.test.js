@@ -122,13 +122,15 @@ test('expired tokens fail closed and production configuration validates URLs and
   assert.throws(() => readConfig({ APP_URL: 'https://example.com/subpath' }), /origin/);
 });
 
-test('sponsor configuration renders explicit disclosure and fallback without external script loading', async t => {
+test('sponsor configuration requires a popup and renders no bypass control or external script', async t => {
   const { app } = setup(t, { adUrl: 'https://example.com/sponsor?key=test' });
   const agent = request.agent(app);
   const id = await create(agent);
   const bridge = await request(app).get(`/p/${id}`).expect(200);
-  assert.ok(bridge.text.includes('Continuing opens a sponsor in a new tab.'));
-  assert.ok(bridge.text.includes('Sponsor blocked? Continue without it'));
+  assert.ok(bridge.text.includes('Continuing opens a sponsor in a new tab. Pop-ups must be allowed.'));
+  assert.ok(bridge.text.includes('id="proceed-button" disabled'));
+  assert.ok(bridge.text.includes('id="sponsor-error"'));
+  assert.ok(!bridge.text.includes('Continue without it'));
   assert.ok(!bridge.text.includes('<script src="https://'));
 });
 

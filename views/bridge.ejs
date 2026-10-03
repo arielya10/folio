@@ -6,14 +6,14 @@
     <span class="pill accent">ONE SMALL STEP</span>
     <h1>Your paste is ready.</h1><p>Take a moment. Your text is just ahead.</p>
     <div class="paste-summary"><span class="document-icon" aria-hidden="true">≡</span><div><strong><%= paste.title || 'Untitled paste' %></strong></div><span class="ready-dot" aria-hidden="true"></span></div>
-    <div class="gateway-note"><p><% if (adUrl) { %>A little support keeps Folio running.<br><strong>Continuing opens a sponsor in a new tab.</strong><% } else { %>Good things take a moment.<br><strong>Your paste will be ready in three seconds.</strong><% } %></p></div>
+    <div class="gateway-note"><p><% if (adUrl) { %>A little support keeps Folio running.<br><strong>Continuing opens a sponsor in a new tab. Pop-ups must be allowed.</strong><% } else { %>Good things take a moment.<br><strong>Your paste will be ready in three seconds.</strong><% } %></p></div>
     <p class="bridge-expiry"><%- include('partials/expiry', { paste }) %></p>
     <form method="post" action="/p/<%= paste.id %>/unlock" id="unlock-form">
       <input type="hidden" name="token" value="<%= token %>">
-      <button type="submit" class="button primary full" id="proceed-button">Proceed to paste</button>
-      <% if (adUrl) { %><button class="quiet-link fallback" type="submit" id="fallback-button" name="fallback" value="1">Sponsor blocked? Continue without it</button><% } %>
+      <button type="submit" class="button primary full" id="proceed-button" disabled>Proceed to paste</button>
     </form>
-    <noscript><p class="fine-print">Wait three seconds, then press Proceed to paste. Cookies are required.<% if (adUrl) { %> <a href="<%= adUrl %>" target="_blank" rel="noopener noreferrer sponsored">Visit our sponsor</a> to support Folio.<% } %></p></noscript>
+    <% if (adUrl) { %><p class="gateway-error" id="sponsor-error" role="alert" hidden>Your browser blocked the sponsor tab. Allow pop-ups for this site and try again.</p><% } %>
+    <noscript><p class="fine-print">JavaScript and cookies are required to continue.<% if (adUrl) { %> Enable JavaScript and allow pop-ups for this site.<% } %></p></noscript>
     <p class="fine-print">No downloads or sign-ups are required to read a paste.<% if (adUrl) { %><br>You can close the sponsor tab at any time.<% } %></p>
   </div>
 </section>

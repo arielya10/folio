@@ -176,7 +176,7 @@ Certbot's packaged renewal timer handles renewals. Check it with `systemctl list
 
 1. Open `/owner/login`, sign in with your chosen password, and create a paste from your private library. Set its deletion time. Its generated link must start with your HTTPS domain.
 2. Open the link in a private window. You should see the gateway, not the text.
-3. Wait three seconds. With a real sponsor configured, the disclosed Proceed button opens a sponsor tab and the paste in the original tab. Close the sponsor whenever you wish.
+3. Wait three seconds. With a real sponsor configured, the disclosed Proceed button opens a sponsor tab and the paste in the original tab. If the browser blocks the sponsor tab, the paste remains locked until pop-ups are allowed.
 4. Test the fallback with a blocker enabled. It must still display the paste.
 5. Test raw/download in a new private session: both must redirect to the gateway.
 6. Check light/dark themes, copy buttons, and a phone-sized browser window.

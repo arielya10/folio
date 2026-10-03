@@ -89,22 +89,40 @@ document.querySelectorAll('[data-expires-at]').forEach(element => {
 });
 if (gateway) {
   const proceed = $('#proceed-button');
-  const fallback = $('#fallback-button');
+  const form = $('#unlock-form');
+  const sponsorError = $('#sponsor-error');
   const readyAt = Date.now() + Number(gateway.dataset.wait);
   const tick = () => {
     const remaining = Math.max(0, Math.ceil((readyAt - Date.now()) / 1000));
     proceed.disabled = remaining > 0;
-    if (fallback) fallback.disabled = remaining > 0;
     proceed.textContent = 'Proceed to paste';
     if (!remaining) clearInterval(timer);
   };
   const timer = setInterval(tick, 200);
   tick();
-  $('#unlock-form').addEventListener('submit', event => {
+  form.addEventListener('submit', event => {
     if (Date.now() < readyAt) { event.preventDefault(); return; }
-    if (gateway.dataset.sponsor && event.submitter?.id !== 'fallback-button') {
-      // Open only during an explicit user action. Ad failures must never cancel the form.
-      try { window.open(gateway.dataset.sponsor, '_blank', 'noopener,noreferrer'); } catch { /* Continue to the paste. */ }
+    if (!gateway.dataset.sponsor) return;
+
+    event.preventDefault();
+    if (sponsorError) sponsorError.hidden = true;
+
+    let sponsorWindow = null;
+    try { sponsorWindow = window.open('about:blank', '_blank'); } catch { /* Handled below. */ }
+    if (!sponsorWindow) {
+      if (sponsorError) sponsorError.hidden = false;
+      return;
     }
+
+    try {
+      sponsorWindow.opener = null;
+      sponsorWindow.location.href = gateway.dataset.sponsor;
+    } catch {
+      sponsorWindow.close();
+      if (sponsorError) sponsorError.hidden = false;
+      return;
+    }
+
+    form.submit();
   });
 }
