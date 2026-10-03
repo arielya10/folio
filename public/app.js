@@ -197,6 +197,7 @@ const nativeAd = $('[data-native-ad]');
 if (nativeAd) {
   const container = nativeAd.querySelector('[data-native-ad-container]');
   const notice = nativeAd.querySelector('[data-adblock-notice]');
+  const blockMessage = $('#content-block-message');
   const bait = document.createElement('div');
   bait.className = 'ad-detection-bait adsbox ad-banner ad-unit';
   bait.setAttribute('aria-hidden', 'true');
@@ -209,10 +210,13 @@ if (nativeAd) {
     if (hasRenderedAd()) {
       notice.hidden = true;
       nativeAd.classList.remove('ad-unavailable');
+      document.body.classList.remove('content-blocked');
+      if (blockMessage) blockMessage.hidden = true;
     } else if (baitBlocked || !container?.children.length) {
       notice.hidden = false;
       nativeAd.classList.add('ad-unavailable');
       document.body.classList.add('content-blocked');
+      if (blockMessage) blockMessage.hidden = false;
     }
   };
 
