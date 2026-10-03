@@ -10,6 +10,7 @@
     "dev": "node --watch --env-file-if-exists=.env server.js",
     "test": "node --test",
     "backup": "node --env-file-if-exists=.env scripts/backup.js",
+    "setup-owner": "node scripts/setup-owner.js",
     "delete-paste": "node --env-file-if-exists=.env scripts/delete-paste.js"
   },
   "dependencies": {

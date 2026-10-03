@@ -4,17 +4,19 @@
   <div class="heading-note"><span aria-hidden="true">↙</span> Start with a little text</div>
 </section>
 <form action="/pastes" method="post" id="paste-form">
+  <input type="hidden" name="_csrf" value="<%= ownerCsrf %>">
   <section class="editor-card" aria-label="Create a paste">
-    <div class="card-toolbar"><div class="toolbar-title"><span class="document-icon" aria-hidden="true">≡</span> New paste <span class="pill">PLAIN TEXT</span></div><span class="toolbar-note">No account needed</span></div>
+    <div class="card-toolbar"><div class="toolbar-title"><span class="document-icon" aria-hidden="true">≡</span> New paste <span class="pill">PLAIN TEXT</span></div><span class="toolbar-note">Owner workspace</span></div>
     <% if (error) { %><div class="form-error" role="alert"><%= error %></div><% } %>
     <div class="title-field"><label for="title">TITLE <span>optional</span></label><input id="title" name="title" maxlength="120" placeholder="Give your paste a name…" value="<%= values.title || '' %>" autocomplete="off"></div>
     <div class="text-field"><label class="sr-only" for="content">Paste content</label><div class="line-gutter" aria-hidden="true" id="line-gutter">1</div><textarea id="content" name="content" required maxlength="131072" spellcheck="false" placeholder="Paste something here…&#10;&#10;// A useful snippet&#10;// A thought worth keeping&#10;// Anything you want to share" aria-describedby="editor-help"><%= values.content || '' %></textarea></div>
     <div class="editor-status"><span><span class="status-dot muted"></span> Plain text <span class="status-separator">/</span> UTF-8</span><span id="text-stats">0 characters <span class="status-separator">·</span> 0 / 128 KB</span></div>
+    <div class="expiry-settings"><div><label for="expiresIn" class="field-label">DELETE AFTER</label><select class="owner-input" id="expiresIn" name="expiresIn"><% [['3600', '1 hour'], ['86400', '24 hours'], ['604800', '7 days'], ['2592000', '30 days'], ['0', 'Never — keep this paste']].forEach(([value, label]) => { %><option value="<%= value %>" <%= (values.expiresIn || '86400') === value ? 'selected' : '' %>><%= label %></option><% }) %></select></div><div><label for="expiryHours" class="field-label">OR CUSTOM HOURS <span>optional</span></label><input class="owner-input" id="expiryHours" name="expiryHours" type="number" min="1" max="8760" step="1" placeholder="e.g. 48" value="<%= values.expiryHours || '' %>" aria-describedby="expiry-help"></div><p id="expiry-help">The countdown starts when you create the paste. Custom hours override the selection.</p></div>
   </section>
-  <div class="form-bottom"><p id="editor-help"><span aria-hidden="true">ⓘ</span> Anyone with the link can read your paste.<br><span class="helper-indent">Keep passwords and personal information out.</span></p><button class="button primary" type="submit" id="create-button">Create paste <span aria-hidden="true">↗</span></button></div>
+  <div class="form-bottom"><p id="editor-help"><span aria-hidden="true">ⓘ</span> Anyone with the link can read your paste.</p><button class="button primary" type="submit" id="create-button">Create paste <span aria-hidden="true">↗</span></button></div>
 </form>
 <section class="feature-strip" aria-label="How Folio works">
-  <div><span class="feature-number">01</span><div><h2>Drop it in</h2><p>Just text. No setup, no sign-up.</p></div></div>
+  <div><span class="feature-number">01</span><div><h2>Drop it in</h2><p>Your text, in your own space.</p></div></div>
   <div><span class="feature-number">02</span><div><h2>Make the connection</h2><p>One short link, ready to share.</p></div></div>
   <div><span class="feature-number">03</span><div><h2>Pass it along</h2><p>A brief gateway, then the good stuff.</p></div></div>
 </section>

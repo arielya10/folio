@@ -3,27 +3,37 @@ import { randomBytes } from 'node:crypto';
 import { rateLimit } from 'express-rate-limit';
 import { tokens } from '../lib/tokens.js';
 
-export function pasteRoutes(config, db) {
+export function pasteRoutes(config, db, auth) {
   const router = Router();
   const codec = tokens(config.secret);
-  const insert = db.prepare('INSERT OR IGNORE INTO pastes (id, title, content, created_at) VALUES (?, ?, ?, ?)');
-  const metadata = db.prepare('SELECT id, title, created_at FROM pastes WHERE id = ?');
+  const insert = db.prepare('INSERT OR IGNORE INTO pastes (id, title, content, created_at, expires_at) VALUES (?, ?, ?, ?, ?)');
+  const metadata = db.prepare('SELECT id, title, created_at, expires_at FROM pastes WHERE id = ?');
   const content = db.prepare('SELECT * FROM pastes WHERE id = ?');
   const cookieOptions = { httpOnly: true, secure: config.production, sameSite: 'lax' };
   const showHome = (res, error = '', values = {}) => res.render('home', { page: 'home', title: 'A little space for your text', error, values });
   const fail = (res, status, title, message, back) => res.status(status).render('error', { title, message, back });
   const hasAccess = (req, id) => {
+    if (req.owner) return true;
     const grant = codec.read(req.cookies.folio_access);
     return grant?.kind === 'access' && grant.id === id && grant.sid === req.cookies.folio_sid;
   };
-  router.get('/', (_req, res) => showHome(res));
-  router.post('/pastes', rateLimit({ windowMs: 15 * 60_000, limit: 20, standardHeaders: 'draft-8', legacyHeaders: false,
+  router.get('/', (req, res) => req.owner ? res.redirect('/owner') : res.render('landing', { title: 'A little space for shared words' }));
+  router.post('/pastes', auth.requireOwner, auth.csrf, rateLimit({ windowMs: 15 * 60_000, limit: 20, standardHeaders: 'draft-8', legacyHeaders: false,
     handler: (_req, res) => fail(res, 429, 'A moment, please', 'You have reached the creation limit. Please try again in 15 minutes.', '/'),
   }), (req, res) => {
     const text = req.body?.content;
     const title = req.body?.title ?? '';
     if (typeof text !== 'string' || typeof title !== 'string') return fail(res, 400, 'Invalid paste', 'Please send text and an optional title.', '/');
-    const values = { content: text, title: title.slice(0, 120) };
+    const expiresIn = req.body.expiresIn ?? '86400';
+    const customHours = req.body.expiryHours ?? '';
+    const values = { content: text, title: title.slice(0, 120), expiresIn, expiryHours: typeof customHours === 'string' ? customHours : '' };
+    if (!['0', '3600', '86400', '604800', '2592000'].includes(expiresIn) || typeof customHours !== 'string' ||
+        (customHours !== '' && (!/^\d+$/.test(customHours) || Number(customHours) < 1 || Number(customHours) > 8760))) {
+      return showHome(res.status(422), 'Choose a deletion time, or enter 1–8760 whole hours.', values);
+    }
+    const duration = customHours ? Number(customHours) * 3600 : Number(expiresIn);
+    const createdAt = Date.now();
+    const expiresAt = duration ? createdAt + duration * 1000 : null;
     if (!text.trim()) return showHome(res.status(422), 'Your paste needs a little text first.', values);
     if (Buffer.byteLength(text, 'utf8') > config.maxBytes || title.length > 120) {
       return showHome(res.status(422), 'Use a title under 120 characters and text under 128 KB.', values);
@@ -31,17 +41,17 @@ export function pasteRoutes(config, db) {
     let id;
     for (let attempt = 0; attempt < 5; attempt++) {
       id = randomBytes(9).toString('base64url');
-      if (insert.run(id, title.trim(), text, Date.now()).changes) return res.redirect(303, `/created/${id}`);
+      if (insert.run(id, title.trim(), text, createdAt, expiresAt).changes) return res.redirect(303, `/created/${id}`);
     }
     throw new Error('Could not allocate paste ID');
   });
   router.param('id', (req, res, next, id) => {
     const paste = /^[A-Za-z0-9_-]{12}$/.test(id) ? metadata.get(id) : null;
-    if (!paste) return fail(res, 404, 'Paste not found', 'This link is incomplete, or the paste has been removed.', '/');
+    if (!paste || (paste.expires_at !== null && paste.expires_at <= Date.now())) return fail(res, 404, 'Paste not found', 'This link is incomplete, or the paste has expired or been removed.', '/');
     req.paste = paste;
     next();
   });
-  router.get('/created/:id', (req, res) => res.render('created', {
+  router.get('/created/:id', auth.requireOwner, (req, res) => res.render('created', {
     title: 'Ready to pass along', paste: req.paste, shareUrl: `${config.origin}/p/${req.paste.id}`,
   }));
   router.get('/p/:id', (req, res) => {

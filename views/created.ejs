@@ -9,8 +9,8 @@
     <label class="field-label" for="share-url">YOUR SHAREABLE LINK</label>
     <div class="share-field"><input id="share-url" readonly value="<%= shareUrl %>" aria-label="Shareable paste URL"><button class="button secondary" type="button" data-copy="share-url">Copy link</button></div>
     <a class="button primary full" href="/p/<%= paste.id %>">Open paste <span aria-hidden="true">↗</span></a>
-    <a class="quiet-link" href="/">Create another paste</a>
-    <p class="fine-print">Anyone with this link can read it after the short gateway.<br>Pastes stay available until the site owner removes them.</p>
+    <a class="quiet-link" href="/owner/new">Create another paste</a>
+    <p class="fine-print">Anyone with this link can read it after the short gateway.<br><%- include('partials/expiry', { paste }) %></p>
   </div>
 </section>
 <%- include('partials/footer') %>

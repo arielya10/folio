@@ -1,0 +1,7 @@
+<%- include('partials/head') %>
+<section class="center-stage"><div class="eyebrow">FOR THE PERSON BEHIND THE WORDS.</div><div class="flow-card"><span class="pill accent">SIGN IN</span><h1>Your space, your words.</h1><p>Sign in to create and manage your pastes.</p>
+<% if (error) { %><div class="form-error login-error" role="alert"><%= error %></div><% } %>
+<% if (configured) { %><form class="login-form" method="post" action="/owner/login"><label class="field-label" for="password">YOUR PASSWORD</label><input class="owner-input" id="password" name="password" type="password" required maxlength="1024" autocomplete="current-password"><button class="button primary full" type="submit">Sign in <span aria-hidden="true">↗</span></button></form><p class="fine-print">Owner access only. There is no public registration.</p>
+<% } else { %><div class="setup-note"><strong>One-time setup</strong><p>On your server, run <code>npm run setup-owner</code> to choose your password, then restart the app.</p></div><p class="fine-print">Publishing is locked until the owner account is configured.</p><% } %>
+</div></section>
+<%- include('partials/footer') %>

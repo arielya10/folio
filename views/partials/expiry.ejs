@@ -1,0 +1,1 @@
+<% if (paste.expires_at) { %><span class="expiry-countdown" data-expires-at="<%= paste.expires_at %>" title="Deletes at <%= new Date(paste.expires_at).toISOString() %>">Deletes <%= new Date(paste.expires_at).toLocaleString('en-GB', { timeZone: 'UTC', dateStyle: 'medium', timeStyle: 'short' }) %> UTC</span><% } else { %><span class="no-expiry">No expiry</span><% } %>

@@ -4,9 +4,13 @@ import cookieParser from 'cookie-parser';
 import { rateLimit } from 'express-rate-limit';
 import { fileURLToPath } from 'node:url';
 import { pasteRoutes } from './routes/pastes.js';
+import { ownerAuth } from './lib/owner.js';
+import { ownerRoutes } from './routes/owner.js';
+import { purgeExpired } from './lib/database.js';
 
 export function createApp(config, db) {
   const app = express();
+  Object.assign(app.locals, { page: '', isOwner: false, ownerCsrf: '', assetVersion: Date.now().toString(36) });
   app.disable('x-powered-by');
   if (config.trustProxy) app.set('trust proxy', 'loopback');
   app.set('view engine', 'ejs');
@@ -23,11 +27,13 @@ export function createApp(config, db) {
     strictTransportSecurity: config.production ? { maxAge: 31536000 } : false,
     crossOriginOpenerPolicy: { policy: 'same-origin-allow-popups' },
   }));
-  app.use('/assets', express.static(fileURLToPath(new URL('./public', import.meta.url)), { maxAge: '1h', dotfiles: 'deny' }));
+  app.use('/assets', express.static(fileURLToPath(new URL('./public', import.meta.url)), { maxAge: config.production ? '1h' : 0, dotfiles: 'deny' }));
   app.use((req, res, next) => {
     res.set('Cache-Control', 'no-store');
     res.set('X-Robots-Tag', 'noindex, nofollow');
     res.locals.page = '';
+    res.locals.isOwner = false;
+    res.locals.ownerCsrf = '';
     next();
   });
   app.get('/healthz', (_req, res) => {
@@ -45,7 +51,11 @@ export function createApp(config, db) {
   });
   app.use(express.urlencoded({ extended: false, limit: '1mb', parameterLimit: 10 }));
   app.use(cookieParser());
-  app.use(pasteRoutes(config, db));
+  app.use((_req, _res, next) => { purgeExpired(db); next(); });
+  const auth = ownerAuth(config, db);
+  app.use(auth.middleware);
+  app.use(ownerRoutes(config, db, auth));
+  app.use(pasteRoutes(config, db, auth));
   app.use((_req, res) => res.status(404).render('error', { title: 'Nothing here just yet', message: 'This link is incomplete, or the paste has been removed.', back: '/' }));
   app.use((err, _req, res, _next) => {
     const status = err.type === 'entity.too.large' ? 413 : err.status === 400 ? 400 : 500;

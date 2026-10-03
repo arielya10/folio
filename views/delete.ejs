@@ -1,0 +1,3 @@
+<%- include('partials/head') %>
+<section class="center-stage"><div class="flow-card"><span class="pill">REMOVE A PASTE</span><h1>Delete this paste?</h1><p><strong><%= paste.title || 'Untitled paste' %></strong></p><p class="delete-note">The link will stop working immediately. This cannot be undone here.</p><form method="post" action="/owner/pastes/<%= paste.id %>/delete"><input type="hidden" name="_csrf" value="<%= ownerCsrf %>"><button class="button primary full" type="submit">Delete paste</button></form><a class="quiet-link" href="/owner">Keep it — return to my pastes</a></div></section>
+<%- include('partials/footer') %>

@@ -6,11 +6,27 @@ const toast = message => {
   clearTimeout(toast.timeout);
   toast.timeout = setTimeout(() => { element.hidden = true; }, 3500);
 };
-$('.theme-toggle')?.addEventListener('click', () => {
-  const theme = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
-  document.documentElement.dataset.theme = theme;
-  try { localStorage.setItem('folio-theme', theme); } catch { /* Optional preference. */ }
-});
+const themeToggle = $('.theme-toggle');
+if (themeToggle) {
+  const updateThemeToggle = () => {
+    const dark = document.documentElement.dataset.theme === 'dark';
+    themeToggle.setAttribute('aria-pressed', String(dark));
+    themeToggle.setAttribute('aria-label', dark ? 'Switch to light theme' : 'Switch to dark theme');
+    themeToggle.title = dark ? 'Switch to light theme' : 'Switch to dark theme';
+    const themeIcon = themeToggle.querySelector('span');
+    if (themeIcon) themeIcon.textContent = dark ? '☀' : '☾';
+  };
+
+  themeToggle.addEventListener('click', () => {
+    const theme = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
+    document.documentElement.dataset.theme = theme;
+    document.documentElement.style.colorScheme = theme;
+    try { localStorage.setItem('folio-theme', theme); } catch { /* Optional preference. */ }
+    updateThemeToggle();
+  });
+
+  updateThemeToggle();
+}
 document.querySelectorAll('[data-copy]').forEach(button => button.addEventListener('click', async () => {
   const target = document.getElementById(button.dataset.copy);
   const text = target.tagName === 'INPUT' ? target.value : target.textContent;
@@ -49,6 +65,18 @@ $('#wrap-button')?.addEventListener('click', event => {
   event.currentTarget.setAttribute('aria-pressed', String(enabled));
 });
 const gateway = $('#gateway');
+document.querySelectorAll('[data-expires-at]').forEach(element => {
+  const update = () => {
+    let seconds = Math.max(0, Math.ceil((Number(element.dataset.expiresAt) - Date.now()) / 1000));
+    const days = Math.floor(seconds / 86400); seconds %= 86400;
+    const hours = Math.floor(seconds / 3600); seconds %= 3600;
+    const minutes = Math.floor(seconds / 60); seconds %= 60;
+    element.textContent = days || hours || minutes || seconds
+      ? `Deletes in ${days ? `${days}d ` : ''}${hours}h ${minutes}m ${seconds}s`
+      : 'Expired — this paste is no longer available';
+  };
+  update(); setInterval(update, 1000);
+});
 if (gateway) {
   const proceed = $('#proceed-button');
   const fallback = $('#fallback-button');
@@ -57,8 +85,7 @@ if (gateway) {
     const remaining = Math.max(0, Math.ceil((readyAt - Date.now()) / 1000));
     proceed.disabled = remaining > 0;
     if (fallback) fallback.disabled = remaining > 0;
-    proceed.textContent = remaining ? `Ready in ${remaining}…` : 'Proceed to paste ↗';
-    $('#countdown-message').textContent = remaining ? 'Getting your paste ready…' : 'All set. Continue when you’re ready.';
+    proceed.textContent = 'Proceed to paste';
     if (!remaining) clearInterval(timer);
   };
   const timer = setInterval(tick, 200);

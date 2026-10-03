@@ -7,15 +7,24 @@
   <meta name="description" content="A little space for your text. Create a paste, get a link, and pass it along.">
   <title><%= title %> · Folio</title>
   <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">
-  <script src="/assets/theme.js"></script>
-  <link rel="stylesheet" href="/assets/style.css">
-  <script src="/assets/app.js" defer></script>
+  <script src="/assets/theme.js?v=<%= typeof assetVersion === 'undefined' ? '2' : assetVersion %>"></script>
+  <link rel="stylesheet" href="/assets/style.css?v=<%= typeof assetVersion === 'undefined' ? '2' : assetVersion %>">
+  <script src="/assets/app.js?v=<%= typeof assetVersion === 'undefined' ? '2' : assetVersion %>" defer></script>
 </head>
 <body>
   <header class="site-header">
-    <a class="brand" href="/" aria-label="Folio home"><span class="brand-icon" aria-hidden="true">f.</span>folio<span class="brand-dot">/</span></a>
+    <a class="brand" href="/" aria-label="Folio home">
+      <svg class="brand-mark" viewBox="0 0 40 40" aria-hidden="true" focusable="false">
+        <rect class="brand-mark-bg" x=".75" y=".75" width="38.5" height="38.5" rx="11.25"/>
+        <path class="brand-sheet-back" d="M11.75 15.25v-3.5a3 3 0 0 1 3-3h9.5a3 3 0 0 1 3 3v3.5"/>
+        <rect class="brand-sheet" x="13.75" y="12.25" width="15.5" height="19" rx="3.25"/>
+        <path class="brand-lines" d="M18 18.25h7M18 22h7M18 25.75h4.25"/>
+      </svg>
+      <span class="brand-word">folio<span class="brand-period">.</span></span>
+    </a>
     <nav aria-label="Main navigation">
-      <a class="nav-link <%= page === 'home' ? 'active' : '' %>" href="/">New paste <span aria-hidden="true">↗</span></a>
+      <% const isOwnerView = typeof isOwner !== 'undefined' ? isOwner : false; const ownerToken = typeof ownerCsrf !== 'undefined' ? ownerCsrf : ''; %>
+      <% if (isOwnerView) { %><a class="nav-link <%= page === 'dashboard' ? 'active' : '' %>" href="/owner">My pastes</a><form method="post" action="/owner/logout" class="logout-form"><input type="hidden" name="_csrf" value="<%= ownerToken %>"><button class="nav-link" type="submit">Sign out</button></form><% } else { %><a class="nav-link" href="/owner/login">Sign in <span aria-hidden="true">↓</span></a><% } %>
       <span class="nav-divider" aria-hidden="true"></span>
       <button class="theme-toggle" type="button" aria-label="Switch color theme" title="Switch color theme"><span aria-hidden="true">◐</span></button>
     </nav>

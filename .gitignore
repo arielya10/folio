@@ -5,3 +5,6 @@ data/
 backups/
 *.log
 test-results/
+coverage/
+.DS_Store
+Thumbs.db

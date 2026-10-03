@@ -1,6 +1,6 @@
 # Folio
 
-A lightweight, self-hosted Pastebin-style application for Node.js 24, Express 5, and SQLite. Clean responsive light/dark UI, no frontend build step, no CDN dependency, no account required.
+A lightweight, self-hosted Pastebin-style application for Node.js 24, Express 5, and SQLite. Only the owner can publish. Visitors read shared links without an account. Includes a private paste library, timed deletion, responsive light/dark UI, and no frontend build step or CDN dependency.
 
 ## Run locally
 
@@ -9,10 +9,23 @@ Install Node.js **24.13 or newer within the 24.x line**, then:
 ```powershell
 npm ci
 Copy-Item .env.example .env
+npm run setup-owner
 npm start
 ```
 
-On Linux/macOS use `cp .env.example .env` instead of `Copy-Item`. Open **http://localhost:3000**. `npm run dev` watches the server for changes. `npm test` runs integration tests.
+On Linux/macOS use `cp .env.example .env` instead of `Copy-Item`. Choose your own password in the hidden terminal prompt (at least 12 characters). Open **http://localhost:3000/owner/login** to sign in. `npm run dev` watches the server for changes. `npm test` runs integration tests. If `.env` already exists, keep it instead of copying over it.
+
+## Owner workspace and timed deletion
+
+- `/owner` lists all your active pastes, newest first, with 30 per page. Open, copy a share link, or delete a paste after a confirmation page. There is no public directory or public registration.
+- `/owner/new` creates a paste. The backend requires an owner session and a CSRF token; hiding the public editor is not the access control.
+- Choose **1 hour, 24 hours (default), 7 days, 30 days, or Never**, or enter **1–8760 custom hours**. Custom hours override the preset. The timer starts when creation succeeds.
+- The dashboard, gateway, confirmation, and viewer display the deletion countdown. Without JavaScript, the exact UTC deletion time is shown instead.
+- The server removes expired records at startup, every minute, and before application routes. An expired paste cannot be opened, downloaded, or read as raw text, including by an already-unlocked visitor or the owner. Existing rendered/downloaded copies and backups cannot be recalled.
+- Existing databases migrate automatically. Old pastes remain in your private library with **No expiry**; migration does not retroactively delete them.
+- Owner sessions last 12 hours and use opaque HttpOnly cookies, SameSite=Strict, and Secure in production. Only SHA-256 session token hashes are stored in SQLite. Passwords are stored as salted scrypt hashes in `.env`. Owner state-changing forms require CSRF tokens. Login is limited to five attempts per IP per 15 minutes.
+- With no configured owner password, publishing stays locked; no default password or public setup endpoint exists. Run `npm run setup-owner` to set/reset the owner password, then restart the server. Password changes invalidate earlier owner sessions after restart. Do not share the password or `.env`.
+- Owners preview their own pastes directly, without the sponsor gateway. Visitors still pass through it.
 
 Node's built-in `node:sqlite` avoids native package compilation on Oracle AMD or ARM instances. It may print an experimental SQLite warning on the minimum supported Node version; that is expected. The database is created automatically at `data/pastes.sqlite` using WAL mode and parameterized queries.
 
@@ -24,12 +37,16 @@ app.js                    Express middleware, security headers, error handling
 lib/config.js             Environment validation
 lib/database.js           SQLite schema and initialization
 lib/tokens.js             Signed gateway and access tokens
+lib/owner.js              Owner sessions and CSRF checks
+lib/passwords.js          Scrypt password hashing and verification
+routes/owner.js           Login, private library, logout and deletion
 routes/pastes.js           Creation, bridge, unlock, viewer, raw, download routes
 views/                    Escaped EJS templates and shared page chrome
 public/                   Local CSS, JavaScript, favicon (only public assets)
 test/app.test.js          HTTP integration and persistence tests
 scripts/backup.js          Consistent online SQLite backup
 scripts/delete-paste.js    Owner-operated paste removal
+scripts/setup-owner.js     Hidden terminal prompt for owner password setup/reset
 deploy/                   Nginx configuration examples
 ecosystem.config.cjs       Single-process PM2 configuration
 DEPLOYMENT.md             Exact Ubuntu, Oracle, PM2, Nginx and SSL instructions
@@ -41,9 +58,14 @@ package-lock.json         Reproducible dependency versions
 
 | Method | Route | Behavior |
 | --- | --- | --- |
-| GET | `/` | Editor with optional title and 128 KiB content limit |
-| POST | `/pastes` | Validate and save; redirect to link confirmation |
-| GET | `/created/:id` | Shareable URL and copy/open controls |
+| GET | `/` | Public welcome page; signed-in owner redirects to library |
+| GET/POST | `/owner/login` | Owner password sign-in |
+| GET | `/owner` | Private paginated paste library and deletion countdowns |
+| GET | `/owner/new` | Owner editor, title, expiration, 128 KiB text limit |
+| POST | `/owner/logout` | Invalidate the owner session |
+| GET/POST | `/owner/pastes/:id/delete` | Owner deletion confirmation and action |
+| POST | `/pastes` | Owner-only creation; redirect to link confirmation |
+| GET | `/created/:id` | Owner-only shareable URL and copy/open controls |
 | GET | `/p/:id` | Three-second gateway; no paste body in HTML |
 | POST | `/p/:id/unlock` | Validate browser-bound signed token and server-side timer |
 | GET | `/p/:id/view` | Escaped text viewer; requires access cookie |
@@ -71,9 +93,9 @@ Do not paste an arbitrary ad script into the page or disable the content-securit
 - Title limit: 120 characters. Content limit: 128 KiB of UTF-8. Native form bodies are capped at 1 MiB because URL encoding expands text.
 - Paste content is escaped by EJS; raw output is `text/plain` with `nosniff`. CSP allows only local scripts/styles and forbids embedding and plugins. No user HTML runs.
 - The SQLite file, `.env`, backups and source files are never served as static content. Keep them outside any separate Nginx static root.
-- No automatic deletion or expiration is configured. Monitor disk space; public creation can consume storage over time. Run `npm run delete-paste -- PASTE_ID` to remove abuse. Deletion does not erase copies readers made or copies retained in backups.
+- Automatic expiration is enforced server-side. Monitor disk space and backup retention. Use the private dashboard or `npm run delete-paste -- PASTE_ID` for manual removal. Deletion does not erase copies readers made or copies retained in backups.
 - Run `npm run backup` for a consistent online SQLite backup; copy it to separate protected storage. Do **not** copy just the live main database while WAL writes are active. Backup retention is operator managed.
-- This is a small single-instance service, not a highly available cluster. Keep PM2 at one instance. It does not include accounts, encryption at rest, content moderation automation, or a public paste directory.
+- This is a small single-instance service, not a highly available cluster. Keep PM2 at one instance. There is one owner account; no multi-user registration, encryption at rest, or public paste directory.
 
 See [DEPLOYMENT.md](DEPLOYMENT.md) for server installation, existing HTTPS integration, fresh SSL setup, updates, backups and recovery.
 

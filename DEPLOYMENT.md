@@ -75,18 +75,19 @@ npm ci
 npm test
 npm prune --omit=dev
 cp .env.example .env
-node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+npm run setup-owner
 nano .env
 ```
 
-Use the generated random value for the secret and your real values below:
+The setup command asks for your owner password with hidden input and saves a salted scrypt hash plus a random cookie secret. Keep those generated values when editing `.env`; replace the hostname and sponsor settings below. There is no default owner password. For an existing installation, keep `.env` and just run `npm run setup-owner` to add or reset owner access.
 
 ```dotenv
 NODE_ENV=production
 HOST=127.0.0.1
 PORT=3000
 APP_URL=https://YOUR_SUBDOMAIN.duckdns.org
-COOKIE_SECRET=PASTE_YOUR_GENERATED_RANDOM_SECRET_HERE
+COOKIE_SECRET=KEEP_THE_RANDOM_VALUE_SAVED_BY_SETUP
+OWNER_PASSWORD_HASH=KEEP_THE_SCRYPT_HASH_SAVED_BY_SETUP
 DATABASE_PATH=./data/pastes.sqlite
 ADSTERRA_DIRECT_LINK=https://YOUR_EXACT_ADSTERRA_DIRECT_LINK
 TRUST_PROXY=1
@@ -173,12 +174,14 @@ Certbot's packaged renewal timer handles renewals. Check it with `systemctl list
 
 ## 5. Verify the live flow
 
-1. Create a small paste. Its generated link must start with your HTTPS domain.
+1. Open `/owner/login`, sign in with your chosen password, and create a paste from your private library. Set its deletion time. Its generated link must start with your HTTPS domain.
 2. Open the link in a private window. You should see the gateway, not the text.
 3. Wait three seconds. With a real sponsor configured, the disclosed Proceed button opens a sponsor tab and the paste in the original tab. Close the sponsor whenever you wish.
 4. Test the fallback with a blocker enabled. It must still display the paste.
 5. Test raw/download in a new private session: both must redirect to the gateway.
 6. Check light/dark themes, copy buttons, and a phone-sized browser window.
+7. Sign out. Anonymous users must not see your library or editor and must not be able to publish.
+8. Verify the library shows deletion countdowns. Expired records are removed by the app; existing pastes migrated from the first version have no expiry.
 
 No sponsor visit or payable ad impression has been tested by this repository's automated tests. Tests use an inert example URL; your real account configuration must be verified by you.
 
@@ -194,6 +197,10 @@ npm run delete-paste -- PASTE_ID
 ```
 
 Backups are consistent snapshots even with WAL enabled; copy them off-instance to a secure location. Do not copy only `pastes.sqlite` while the app is writing. Backups contain all saved text. Set your retention policy and monitor SQLite growth and PM2/Nginx logs. Install/configure log rotation for a long-lived public deployment.
+
+To reset the owner password, run `npm run setup-owner` in `/home/ubuntu/folio`, then `pm2 restart ecosystem.config.cjs --update-env`. Existing owner sessions are rejected after restart. No password reset endpoint is exposed publicly. Lost server access requires recovering the server first.
+
+Time limits use the server clock; keep Ubuntu time synchronization enabled. Expired records are purged at startup, every minute and before app routes. Restored backups are purged on startup too. Keep `.env` permissions at 600 and protect backups, which also include hashed owner session records.
 
 To update: make a backup, upload the new source **excluding `.env`, `data/`, and `backups/`**, then:
 
