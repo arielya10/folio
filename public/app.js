@@ -211,6 +211,7 @@ if (nativeAd) {
       notice.hidden = true;
       nativeAd.classList.remove('ad-unavailable');
       document.body.classList.remove('content-blocked');
+      document.body.classList.add('ads-allowed');
       if (blockMessage) blockMessage.hidden = true;
     } else if (baitBlocked || !container?.children.length) {
       notice.hidden = false;
