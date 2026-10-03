@@ -67,6 +67,7 @@ test('full flow: persistence, actual countdown, browser binding, escaped renderi
   const viewer = await reader.get(`/p/${id}/view`).expect(200);
   assert.ok(viewer.text.includes('&lt;script&gt;'));
   assert.ok(!viewer.text.includes('<img src=x'));
+  assert.equal(db.prepare('SELECT view_count FROM pastes WHERE id = ?').get(id).view_count, 1);
   assert.equal(viewer.headers['cache-control'], 'no-store');
   // no-referrer can cause browsers to send Origin: null on native POST forms.
   assert.equal(viewer.headers['referrer-policy'], 'same-origin');
@@ -77,6 +78,7 @@ test('full flow: persistence, actual countdown, browser binding, escaped renderi
   const download = await reader.get(`/p/${id}/download`).expect(200);
   assert.match(download.headers['content-disposition'], /attachment/);
   assert.equal(download.text, text);
+  assert.equal(db.prepare('SELECT view_count FROM pastes WHERE id = ?').get(id).view_count, 1);
   // A grant for one paste must not unlock another paste.
   const other = await create(writer);
   await reader.get(`/p/${other}/view`).expect(302);

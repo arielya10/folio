@@ -22,7 +22,7 @@ export function ownerRoutes(config, db, auth) {
     const total = db.prepare('SELECT COUNT(*) AS count FROM pastes').get().count;
     const pages = Math.max(1, Math.ceil(total / 30));
     const pageNumber = Math.min(pages, Math.max(1, Number.parseInt(req.query.page, 10) || 1));
-    const pastes = db.prepare('SELECT id, title, created_at, expires_at FROM pastes ORDER BY created_at DESC, id DESC LIMIT 30 OFFSET ?').all((pageNumber - 1) * 30);
+    const pastes = db.prepare('SELECT id, title, created_at, expires_at, view_count FROM pastes ORDER BY created_at DESC, id DESC LIMIT 30 OFFSET ?').all((pageNumber - 1) * 30);
     res.render('dashboard', { title: 'Your pastes', page: 'dashboard', pastes, total, pages, pageNumber, origin: config.origin });
   });
   router.get('/owner/new', auth.requireOwner, (_req, res) => res.render('home', { title: 'Create a paste', page: 'home', error: '', values: {} }));

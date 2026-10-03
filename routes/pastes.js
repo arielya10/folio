@@ -9,6 +9,7 @@ export function pasteRoutes(config, db, auth) {
   const insert = db.prepare('INSERT OR IGNORE INTO pastes (id, title, content, created_at, expires_at) VALUES (?, ?, ?, ?, ?)');
   const metadata = db.prepare('SELECT id, title, created_at, expires_at FROM pastes WHERE id = ?');
   const content = db.prepare('SELECT * FROM pastes WHERE id = ?');
+  const countView = db.prepare('UPDATE pastes SET view_count = view_count + 1 WHERE id = ?');
   const cookieOptions = { httpOnly: true, secure: config.production, sameSite: 'lax' };
   const showHome = (res, error = '', values = {}) => res.render('home', { page: 'home', title: 'A little space for your text', error, values });
   const fail = (res, status, title, message, back) => res.status(status).render('error', { title, message, back });
@@ -82,6 +83,7 @@ export function pasteRoutes(config, db, auth) {
   const requireAccess = (req, res, next) => hasAccess(req, req.paste.id) ? next() : res.redirect(302, `/p/${req.paste.id}`);
   router.get('/p/:id/view', requireAccess, (req, res) => {
     const paste = content.get(req.paste.id);
+    if (!req.owner) countView.run(req.paste.id);
     res.render('viewer', { title: paste.title || 'Untitled paste', paste, shareUrl: `${config.origin}/p/${paste.id}`,
       byteSize: Buffer.byteLength(paste.content, 'utf8'), lineCount: paste.content.split('\n').length,
       nativeAd: req.owner ? null : config.nativeAd,
