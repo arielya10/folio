@@ -44,14 +44,24 @@ document.querySelectorAll('[data-copy]').forEach(button => button.addEventListen
 }));
 const textarea = $('#content');
 if (textarea) {
+  const contentError = $('#content-error');
+  let contentErrorVisible = false;
+  const showContentError = () => { contentErrorVisible = true; update(); };
   const update = () => {
     const bytes = new TextEncoder().encode(textarea.value).length;
+    const message = bytes > 131072 ? 'Please keep your paste under 128 KB.' : !textarea.value.trim() ? 'Give your paste a little text to get started.' : '';
     $('#text-stats').textContent = `${textarea.value.length.toLocaleString()} characters · ${(bytes / 1024).toFixed(1)} / 128 KB`;
-    textarea.setCustomValidity(bytes > 131072 ? 'Please keep your paste under 128 KB.' : textarea.value && !textarea.value.trim() ? 'Please enter some text.' : '');
+    textarea.setCustomValidity(message);
+    textarea.setAttribute('aria-invalid', String(Boolean(message)));
+    if (contentError) {
+      contentError.textContent = message;
+      contentError.hidden = !contentErrorVisible || !message;
+    }
     const lines = textarea.value.split('\n').length;
     $('#line-gutter').textContent = Array.from({ length: Math.min(lines, 2000) }, (_, index) => index + 1).join('\n');
   };
   textarea.addEventListener('input', update);
+  textarea.addEventListener('invalid', event => { event.preventDefault(); showContentError(); });
   textarea.addEventListener('scroll', () => { $('#line-gutter').scrollTop = textarea.scrollTop; });
   textarea.addEventListener('keydown', event => {
     if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') $('#paste-form').requestSubmit();
@@ -72,7 +82,7 @@ document.querySelectorAll('[data-expires-at]').forEach(element => {
     const hours = Math.floor(seconds / 3600); seconds %= 3600;
     const minutes = Math.floor(seconds / 60); seconds %= 60;
     element.textContent = days || hours || minutes || seconds
-      ? `Deletes in ${days ? `${days}d ` : ''}${hours}h ${minutes}m ${seconds}s`
+      ? `Deletes in ${days ? `${days}d ` : ''}${hours ? `${hours}h ` : ''}${minutes}m ${seconds}s`
       : 'Expired — this paste is no longer available';
   };
   update(); setInterval(update, 1000);
