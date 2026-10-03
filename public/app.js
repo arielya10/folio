@@ -91,17 +91,20 @@ if (gateway) {
   const proceed = $('#proceed-button');
   const form = $('#unlock-form');
   const sponsorError = $('#sponsor-error');
+  let sponsorBlocked = false;
+  let sponsorCheckPending = Boolean(gateway.dataset.sponsor);
   const readyAt = Date.now() + Number(gateway.dataset.wait);
   const tick = () => {
     const remaining = Math.max(0, Math.ceil((readyAt - Date.now()) / 1000));
-    proceed.disabled = remaining > 0;
-    proceed.textContent = remaining ? `Wait ${remaining}s` : 'Proceed to paste';
+    proceed.disabled = remaining > 0 || sponsorBlocked || sponsorCheckPending;
+    proceed.textContent = sponsorBlocked ? 'Disable blocker to continue' : sponsorCheckPending ? 'Checking sponsor access' : remaining ? `Wait ${remaining}s` : 'Proceed to paste';
     if (!remaining) clearInterval(timer);
   };
   const timer = setInterval(tick, 200);
   tick();
   form.addEventListener('submit', event => {
     if (Date.now() < readyAt) { event.preventDefault(); return; }
+    if (sponsorBlocked) { event.preventDefault(); return; }
     if (!gateway.dataset.sponsor) return;
 
     event.preventDefault();
@@ -125,6 +128,30 @@ if (gateway) {
 
     form.submit();
   });
+
+  if (gateway.dataset.sponsor) {
+    const bait = document.createElement('div');
+    bait.className = 'ad-detection-bait adsbox ad-banner ad-unit';
+    bait.setAttribute('aria-hidden', 'true');
+    document.body.appendChild(bait);
+    const detectSponsorBlocking = async () => {
+      try {
+        let brave = false;
+        try { brave = Boolean(navigator.brave && await navigator.brave.isBrave()); } catch { /* Browser API unavailable. */ }
+        const style = getComputedStyle(bait);
+        const baitBlocked = bait.offsetHeight === 0 || bait.offsetWidth === 0 || style.display === 'none' || style.visibility === 'hidden';
+        if (brave || baitBlocked) {
+          sponsorBlocked = true;
+          if (sponsorError) sponsorError.hidden = false;
+        }
+      } finally {
+        bait.remove();
+        sponsorCheckPending = false;
+        tick();
+      }
+    };
+    detectSponsorBlocking();
+  }
 }
 const nativeAd = $('[data-native-ad]');
 if (nativeAd) {

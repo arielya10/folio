@@ -12,7 +12,7 @@
       <input type="hidden" name="token" value="<%= token %>">
       <button type="submit" class="button primary full" id="proceed-button" disabled>Proceed to paste</button>
     </form>
-    <% if (adUrl) { %><p class="gateway-error" id="sponsor-error" role="alert" hidden>Your browser blocked the sponsor tab. Allow pop-ups for this site and try again.</p><% } %>
+    <% if (adUrl) { %><p class="gateway-error" id="sponsor-error" role="alert" hidden>Your browser appears to block sponsor content. Disable Brave Shields or your ad blocker, then reload this page.</p><% } %>
     <noscript><p class="fine-print">JavaScript and cookies are required to continue.<% if (adUrl) { %> Enable JavaScript and allow pop-ups for this site.<% } %></p></noscript>
     <p class="fine-print">No downloads or sign-ups are required to read a paste.<% if (adUrl) { %><br>You can close the sponsor tab at any time.<% } %></p>
   </div>
