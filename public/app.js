@@ -42,6 +42,31 @@ document.querySelectorAll('[data-copy]').forEach(button => button.addEventListen
     toast('Text selected. Use your device’s copy command.');
   }
 }));
+const pasteContent = $('#paste-content');
+if (pasteContent) {
+  const text = pasteContent.textContent;
+  const urlPattern = /(?:https?:\/\/|www\.)[^\s<>]+/g;
+  const fragment = document.createDocumentFragment();
+  let lastIndex = 0;
+  for (const match of text.matchAll(urlPattern)) {
+    const url = match[0];
+    const trailing = url.match(/[.,!?;:)\]}]+$/)?.[0] || '';
+    const linkText = trailing ? url.slice(0, -trailing.length) : url;
+    fragment.append(document.createTextNode(text.slice(lastIndex, match.index)));
+    const link = document.createElement('a');
+    link.className = 'paste-link';
+    link.href = linkText.startsWith('www.') ? `https://${linkText}` : linkText;
+    link.target = '_blank';
+    link.rel = 'noopener noreferrer';
+    link.textContent = linkText;
+    fragment.append(link, document.createTextNode(trailing));
+    lastIndex = match.index + url.length;
+  }
+  if (lastIndex) {
+    fragment.append(document.createTextNode(text.slice(lastIndex)));
+    pasteContent.replaceChildren(fragment);
+  }
+}
 const textarea = $('#content');
 if (textarea) {
   const contentError = $('#content-error');
@@ -104,7 +129,13 @@ if (gateway) {
   tick();
   form.addEventListener('submit', event => {
     if (Date.now() < readyAt) { event.preventDefault(); return; }
-    if (sponsorBlocked) { event.preventDefault(); return; }
+    if (sponsorBlocked || isContentBlocked()) {
+      event.preventDefault();
+      sponsorBlocked = true;
+      if (sponsorError) sponsorError.hidden = false;
+      tick();
+      return;
+    }
     if (!gateway.dataset.sponsor) return;
 
     event.preventDefault();
@@ -138,9 +169,7 @@ if (gateway) {
       try {
         let brave = false;
         try { brave = Boolean(navigator.brave && await navigator.brave.isBrave()); } catch { /* Browser API unavailable. */ }
-        const style = getComputedStyle(bait);
-        const baitBlocked = bait.offsetHeight === 0 || bait.offsetWidth === 0 || style.display === 'none' || style.visibility === 'hidden';
-        if (brave || baitBlocked) {
+        if (brave || isContentBlocked()) {
           sponsorBlocked = true;
           if (sponsorError) sponsorError.hidden = false;
         }
@@ -151,6 +180,17 @@ if (gateway) {
       }
     };
     detectSponsorBlocking();
+  }
+
+  function isContentBlocked() {
+    const bait = document.createElement('div');
+    bait.className = 'ad-detection-bait adsbox ad-banner ad-unit';
+    bait.setAttribute('aria-hidden', 'true');
+    document.body.appendChild(bait);
+    const style = getComputedStyle(bait);
+    const blocked = bait.offsetHeight === 0 || bait.offsetWidth === 0 || style.display === 'none' || style.visibility === 'hidden';
+    bait.remove();
+    return blocked;
   }
 }
 const nativeAd = $('[data-native-ad]');
@@ -172,6 +212,7 @@ if (nativeAd) {
     } else if (baitBlocked || !container?.children.length) {
       notice.hidden = false;
       nativeAd.classList.add('ad-unavailable');
+      document.body.classList.add('content-blocked');
     }
   };
 
