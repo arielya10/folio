@@ -15,6 +15,22 @@ npm start
 
 On Linux/macOS use `cp .env.example .env` instead of `Copy-Item`. Choose your own password in the hidden terminal prompt (at least 12 characters). Open **http://localhost:3000/owner/login** to sign in. `npm run dev` watches the server for changes. `npm test` runs integration tests. If `.env` already exists, keep it instead of copying over it.
 
+## Configuration
+
+`.env.example` documents every supported setting. The defaults are suitable for local development. For production, set `NODE_ENV=production`, use an HTTPS `APP_URL`, and provide a `COOKIE_SECRET` with at least 32 random characters. `npm run setup-owner` writes or updates `OWNER_PASSWORD_HASH` and creates a cookie secret when one is not already present.
+
+| Setting | Purpose | Default |
+| --- | --- | --- |
+| `NODE_ENV` | Enables production HTTPS and secure-cookie behavior when set to `production` | `development` |
+| `HOST` | Network interface for the Node server | `127.0.0.1` |
+| `PORT` | Local listening port | `3000` |
+| `APP_URL` | Public origin used for links and same-origin form checks; no path or credentials | `http://localhost:3000` |
+| `COOKIE_SECRET` | Signs gateway, access, and owner-session tokens | Generated for development; required in production |
+| `OWNER_PASSWORD_HASH` | Salted scrypt hash used for the single owner account | Empty, which disables publishing |
+| `DATABASE_PATH` | SQLite database file location | `./data/pastes.sqlite` |
+| `ADSTERRA_DIRECT_LINK` | Optional HTTPS sponsor link; empty disables advertising | Empty |
+| `TRUST_PROXY` | Set to `1` only when using the supplied local Nginx reverse proxy | `0` |
+
 ## Owner workspace and timed deletion
 
 - `/owner` lists all your active pastes, newest first, with 30 per page. Open, copy a share link, or delete a paste after a confirmation page. There is no public directory or public registration.
@@ -27,7 +43,7 @@ On Linux/macOS use `cp .env.example .env` instead of `Copy-Item`. Choose your ow
 - With no configured owner password, publishing stays locked; no default password or public setup endpoint exists. Run `npm run setup-owner` to set/reset the owner password, then restart the server. Password changes invalidate earlier owner sessions after restart. Do not share the password or `.env`.
 - Owners preview their own pastes directly, without the sponsor gateway. Visitors still pass through it.
 
-Node's built-in `node:sqlite` avoids native package compilation on Oracle AMD or ARM instances. It may print an experimental SQLite warning on the minimum supported Node version; that is expected. The database is created automatically at `data/pastes.sqlite` using WAL mode and parameterized queries.
+Node's built-in `node:sqlite` avoids native package compilation on Oracle AMD or ARM instances. It may print an experimental SQLite warning on the minimum supported Node version; that is expected. By default, the database is created at `data/pastes.sqlite` using WAL mode and parameterized queries; set `DATABASE_PATH` to use another location.
 
 ## Structure
 

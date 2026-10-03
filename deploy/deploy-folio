@@ -1,0 +1,110 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+if [[ "${EUID}" -ne 0 ]]; then
+  echo "deploy-folio must run as root" >&2
+  exit 1
+fi
+
+sha="${1:-}"
+if [[ ! "$sha" =~ ^[0-9a-f]{40}$ ]]; then
+  echo "Invalid commit SHA" >&2
+  exit 2
+fi
+
+release_root="/opt/folio-releases"
+shared_root="/opt/folio-shared"
+live_link="/opt/folio"
+release_dir="${release_root}/${sha}"
+archive="$(mktemp /tmp/folio-release.XXXXXX.tar.gz)"
+next_link="${live_link}.next"
+previous_release=""
+
+cleanup() {
+  rm -f "$archive" "$next_link"
+}
+trap cleanup EXIT
+
+cat > "$archive"
+if [[ ! -s "$archive" ]]; then
+  echo "No release archive received" >&2
+  exit 3
+fi
+
+if ! tar -tzf "$archive" >/dev/null; then
+  echo "Invalid release archive" >&2
+  exit 4
+fi
+
+if tar -tzf "$archive" | grep -E '(^/|(^|/)\.\.(/|$)|(^|/)(\.env|data|backups)(/|$))' >/dev/null; then
+  echo "Release archive contains a forbidden path" >&2
+  exit 5
+fi
+
+install -d -m 0755 -o ubuntu -g ubuntu "$release_root"
+install -d -m 0750 -o ubuntu -g ubuntu "$shared_root"
+
+rm -rf -- "$release_dir"
+install -d -m 0755 -o ubuntu -g ubuntu "$release_dir"
+tar -xzf "$archive" --no-same-owner -C "$release_dir"
+chown -R ubuntu:ubuntu "$release_dir"
+
+ln -s "$shared_root/.env" "$release_dir/.env"
+ln -s "$shared_root/data" "$release_dir/data"
+ln -s "$shared_root/backups" "$release_dir/backups"
+
+sudo -u ubuntu -H bash -lc "cd '$release_dir' && npm ci --omit=dev --no-audit --no-fund"
+
+if [[ -L "$live_link" ]]; then
+  previous_release="$(readlink -f "$live_link")"
+fi
+
+ln -s "$release_dir" "$next_link"
+mv -Tf "$next_link" "$live_link"
+
+reload_folio() {
+  sudo -u ubuntu -H env PM2_HOME=/home/ubuntu/.pm2 \
+    pm2 startOrReload "$live_link/ecosystem.config.cjs" --update-env
+}
+
+if ! reload_folio; then
+  if [[ -n "$previous_release" && -d "$previous_release" ]]; then
+    ln -s "$previous_release" "$next_link"
+    mv -Tf "$next_link" "$live_link"
+    reload_folio || true
+  fi
+  echo "PM2 failed to load the new release; rolled back" >&2
+  exit 6
+fi
+
+healthy=false
+for _ in {1..15}; do
+  if curl --fail --silent --show-error --max-time 2 \
+    http://127.0.0.1:3000/healthz >/dev/null; then
+    healthy=true
+    break
+  fi
+  sleep 1
+done
+
+if [[ "$healthy" != true ]]; then
+  if [[ -n "$previous_release" && -d "$previous_release" ]]; then
+    ln -s "$previous_release" "$next_link"
+    mv -Tf "$next_link" "$live_link"
+    reload_folio || true
+  fi
+  echo "Health check failed; rolled back" >&2
+  exit 7
+fi
+
+sudo -u ubuntu -H env PM2_HOME=/home/ubuntu/.pm2 pm2 save
+
+mapfile -t old_releases < <(find "$release_root" -mindepth 1 -maxdepth 1 -type d \
+  -printf '%T@ %p\n' | sort -rn | tail -n +7 | cut -d' ' -f2-)
+for old_release in "${old_releases[@]}"; do
+  if [[ "$old_release" == "$release_root/"* && "$old_release" != "$previous_release" ]]; then
+    rm -rf -- "$old_release"
+  fi
+done
+
+echo "Deployed ${sha}"

@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+requested_command="${SSH_ORIGINAL_COMMAND:-}"
+
+if [[ "$requested_command" =~ ^deploy[[:space:]]+([0-9a-f]{40})$ ]]; then
+  exec sudo -n /usr/local/sbin/deploy-folio "${BASH_REMATCH[1]}"
+fi
+
+echo "This key may only deploy a Folio commit." >&2
+exit 126

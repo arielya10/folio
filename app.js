@@ -20,6 +20,7 @@ export function createApp(config, db) {
       defaultSrc: ["'self'"], scriptSrc: ["'self'"], styleSrc: ["'self'"],
       imgSrc: ["'self'"], fontSrc: ["'self'"], connectSrc: ["'self'"],
       formAction: ["'self'"], frameAncestors: ["'none'"], objectSrc: ["'none'"],
+      baseUri: ["'none'"], manifestSrc: ["'none'"],
       upgradeInsecureRequests: config.production ? [] : null,
     } },
     // Keep same-origin form Origin headers intact; suppress cross-origin referrers.

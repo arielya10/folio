@@ -240,3 +240,11 @@ Moving the entire stopped database directory preserves its old main file and WAL
 - **No sponsor/revenue:** ensure `ADSTERRA_DIRECT_LINK` is a real HTTPS publisher link, restart PM2 after edits, and verify the placement in your account. Browser blockers and network failures can prevent ads. No completion or revenue guarantee is possible with Direct Links.
 
 References: [PM2 startup](https://pm2.keymetrics.io/docs/usage/quick-start/), [Nginx reverse proxy](https://nginx.org/en/docs/http/ngx_http_proxy_module.html), [Certbot instructions](https://certbot.eff.org/instructions?os=snap&tab=standard&ws=nginx), [Node.js releases](https://nodejs.org/dist/latest-v24.x/).
+
+## GitHub Actions deployment
+
+The workflow in `.github/workflows/deploy.yml` tests every push to `main` and then deploys it to production. Releases are installed under `/opt/folio-releases`; `/opt/folio` points to the active release. The server keeps `.env`, SQLite data, and backups under `/opt/folio-shared`. A failed PM2 reload or local health check restores the previous release.
+
+Create one GitHub repository secret named `FOLIO_DEPLOY_KEY` and paste the full contents of the dedicated private key into it. The matching public key on the server is restricted to `/usr/local/sbin/folio-actions-command`, so it cannot open a shell or run arbitrary SSH commands.
+
+In the GitHub repository, open **Settings → Secrets and variables → Actions → New repository secret**. Use `FOLIO_DEPLOY_KEY` as the name. You may also open **Settings → Environments → production** to add branch protection or required reviewers. The workflow has read-only repository permissions and serializes production deployments to prevent overlapping releases.

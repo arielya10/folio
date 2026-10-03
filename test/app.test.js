@@ -114,7 +114,10 @@ test('expired tokens fail closed and production configuration validates URLs and
   const codec = tokens('secret');
   assert.equal(codec.read(codec.issue({ exp: Date.now() - 1 })), null);
   assert.equal(codec.read('broken.token'), null);
+  assert.throws(() => readConfig({ NODE_ENV: 'staging' }), /NODE_ENV/);
+  assert.throws(() => readConfig({ NODE_ENV: 'production' }), /APP_URL/);
   assert.throws(() => readConfig({ NODE_ENV: 'production', APP_URL: 'https://example.com' }), /COOKIE_SECRET/);
+  assert.throws(() => readConfig({ TRUST_PROXY: '2' }), /TRUST_PROXY/);
   assert.throws(() => readConfig({ ADSTERRA_DIRECT_LINK: 'javascript:alert(1)' }), /HTTPS/);
   assert.throws(() => readConfig({ APP_URL: 'https://example.com/subpath' }), /origin/);
 });

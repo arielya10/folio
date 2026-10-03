@@ -7,6 +7,7 @@
     <h1>Your paste is ready.</h1><p>Take a moment. Your text is just ahead.</p>
     <div class="paste-summary"><span class="document-icon" aria-hidden="true">≡</span><div><strong><%= paste.title || 'Untitled paste' %></strong></div><span class="ready-dot" aria-hidden="true"></span></div>
     <div class="gateway-note"><p><% if (adUrl) { %>A little support keeps Folio running.<br><strong>Continuing opens a sponsor in a new tab.</strong><% } else { %>Good things take a moment.<br><strong>Your paste will be ready in three seconds.</strong><% } %></p></div>
+    <p class="bridge-expiry"><%- include('partials/expiry', { paste }) %></p>
     <form method="post" action="/p/<%= paste.id %>/unlock" id="unlock-form">
       <input type="hidden" name="token" value="<%= token %>">
       <button type="submit" class="button primary full" id="proceed-button">Proceed to paste</button>

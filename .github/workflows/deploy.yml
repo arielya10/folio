@@ -1,0 +1,64 @@
+name: Test and deploy Folio
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: folio-production
+  cancel-in-progress: false
+
+jobs:
+  test-and-deploy:
+    runs-on: ubuntu-latest
+    environment: production
+    timeout-minutes: 15
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Use Node.js 24
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24.13.1
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run tests
+        run: npm test
+
+      - name: Configure restricted deployment key
+        env:
+          FOLIO_DEPLOY_KEY: ${{ secrets.FOLIO_DEPLOY_KEY }}
+        run: |
+          test -n "$FOLIO_DEPLOY_KEY"
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$FOLIO_DEPLOY_KEY" > ~/.ssh/folio_deploy
+          chmod 600 ~/.ssh/folio_deploy
+          cp .github/known_hosts ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/known_hosts
+
+      - name: Deploy release
+        run: |
+          tar \
+            --exclude=.git \
+            --exclude=node_modules \
+            --exclude=.env \
+            --exclude=data \
+            --exclude=backups \
+            --exclude=test-results \
+            -czf - . | ssh \
+              -i ~/.ssh/folio_deploy \
+              -o BatchMode=yes \
+              -o IdentitiesOnly=yes \
+              ubuntu@151.145.80.68 \
+              "deploy ${GITHUB_SHA}"
