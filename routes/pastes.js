@@ -58,7 +58,7 @@ export function pasteRoutes(config, db, auth) {
   });
   router.param('id', (req, res, next, id) => {
     const paste = /^[A-Za-z0-9_-]{12}$/.test(id) ? metadata.get(id) : null;
-    if (!paste || (paste.expires_at !== null && paste.expires_at <= Date.now())) return fail(res, 404, 'Paste not found', 'This link is incomplete, or the paste has expired or been removed.', '/');
+    if (!paste) return fail(res, 404, 'Paste not found', 'This link is incomplete, or the paste has been removed.', '/');
     req.paste = paste;
     next();
   });
@@ -67,6 +67,7 @@ export function pasteRoutes(config, db, auth) {
   }));
   router.get('/p/:id', (req, res) => {
     const { id } = req.paste;
+    if (req.paste.expires_at !== null && req.paste.expires_at <= Date.now()) return res.redirect(302, `/p/${id}/view`);
     if (hasAccess(req, id)) return res.redirect(302, `/p/${id}/view`);
     let sid = req.cookies.folio_sid;
     if (typeof sid !== 'string' || !/^[a-f0-9]{48}$/.test(sid)) sid = randomBytes(24).toString('hex');
@@ -91,14 +92,20 @@ export function pasteRoutes(config, db, auth) {
     res.redirect(303, `/p/${id}/view`);
   });
   const requireAccess = (req, res, next) => hasAccess(req, req.paste.id) ? next() : res.redirect(302, `/p/${req.paste.id}`);
-  router.get('/p/:id/view', requireAccess, (req, res) => {
+  const renderViewer = (req, res) => {
     const paste = content.get(req.paste.id);
-    if (!req.owner) recordVisitorView(req.paste.id, req.cookies.folio_sid);
-    res.render('viewer', { title: paste.title || 'Untitled paste', paste, shareUrl: `${config.origin}/p/${paste.id}`,
-      byteSize: Buffer.byteLength(paste.content, 'utf8'), lineCount: paste.content.split('\n').length,
+    const expired = paste.expires_at !== null && paste.expires_at <= Date.now();
+    if (!expired && !req.owner) recordVisitorView(req.paste.id, req.cookies.folio_sid);
+    res.render('viewer', { title: expired ? 'Paste expired' : paste.title || 'Untitled paste', paste, expired,
+      shareUrl: `${config.origin}/p/${paste.id}`, byteSize: Buffer.byteLength(paste.content, 'utf8'),
+      lineCount: paste.content.split('\n').length,
       nativeAd: req.owner ? null : config.nativeAd,
     });
-  });
+  };
+  router.get('/p/:id/view', (req, res, next) => {
+    const expired = req.paste.expires_at !== null && req.paste.expires_at <= Date.now();
+    return expired ? renderViewer(req, res) : requireAccess(req, res, next);
+  }, renderViewer);
   router.get('/p/:id/raw', requireAccess, (req, res) => {
     res.type('text/plain').send(content.get(req.paste.id).content);
   });

@@ -219,7 +219,7 @@ test('owner-only publishing and library, CSRF, safe logout and manual deletion',
   await writer.post('/pastes').type('form').send({ content: 'logged out', _csrf: csrf }).expect(401);
 });
 
-test('time limits: defaults, custom hours, no expiry, expired links and previously unlocked visitors', async t => {
+test('time limits: defaults, custom hours, no expiry, expired pages and previously unlocked visitors', async t => {
   const { app, db } = setup(t, { waitMs: 0 });
   const writer = request.agent(app);
   const csrf = await signIn(writer);
@@ -237,8 +237,18 @@ test('time limits: defaults, custom hours, no expiry, expired links and previous
   await reader.post(`/p/${id}/unlock`).type('form').send({ token: extractToken(bridge.text) }).expect(303);
   await reader.get(`/p/${id}/view`).expect(200);
   db.prepare('UPDATE pastes SET expires_at = ? WHERE id = ?').run(Date.now() - 1, id);
-  for (const suffix of ['', '/view', '/raw', '/download']) await reader.get(`/p/${id}${suffix}`).expect(404);
-  assert.equal(db.prepare('SELECT id FROM pastes WHERE id = ?').get(id), undefined);
+  const expiredPage = await reader.get(`/p/${id}/view`).expect(200);
+  assert.ok(expiredPage.text.includes('This paste has expired'));
+  assert.ok(expiredPage.text.includes('The title and content were removed after the deletion countdown ended.'));
+  assert.ok(!expiredPage.text.includes('A useful little note.'));
+  const redacted = db.prepare('SELECT title, content FROM pastes WHERE id = ?').get(id);
+  assert.equal(redacted.title, '');
+  assert.equal(redacted.content, '');
+  await reader.get(`/p/${id}`).expect(302).expect('Location', `/p/${id}/view`);
+  await request(app).get(`/p/${id}`).expect(302).expect('Location', `/p/${id}/view`);
+  await request(app).get(`/p/${id}/view`).expect(200);
+  await reader.get(`/p/${id}/raw`).expect(200).expect('');
+  await reader.get(`/p/${id}/download`).expect(200).expect('');
   await writer.get(`/p/${neverId}/view`).expect(200);
 });
 

@@ -108,7 +108,7 @@ document.querySelectorAll('[data-expires-at]').forEach(element => {
     const minutes = Math.floor(seconds / 60); seconds %= 60;
     element.textContent = days || hours || minutes || seconds
       ? `Deletes in ${days ? `${days}d ` : ''}${hours ? `${hours}h ` : ''}${minutes}m ${seconds}s`
-      : 'Expired — this paste is no longer available';
+      : 'Expired — content removed';
   };
   update(); setInterval(update, 1000);
 });
