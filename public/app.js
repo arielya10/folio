@@ -201,6 +201,7 @@ if (textarea && editor) {
   const renderValue = value => { editor.replaceChildren(); let lastIndex = 0; for (const match of value.matchAll(imagePattern)) { editor.append(document.createTextNode(value.slice(lastIndex, match.index))); const image = document.createElement('img'); const [alt, size] = match[1].split('|'); image.className = 'pasted-image'; image.alt = alt || 'Pasted image'; image.src = match[2].replace(/\s/g, ''); if (/^w\d+$/.test(size)) { image.dataset.size = size; image.style.width = `${Number(size.slice(1))}px`; } else if (/^(25|50|75|100)$/.test(size)) { image.dataset.size = `w${Math.round(520 * Number(size) / 100)}`; image.style.width = `${Number(size)}%`; } editor.append(image); lastIndex = match.index + match[0].length; } editor.append(document.createTextNode(value.slice(lastIndex))); };
   renderValue(textarea.value);
   editor.addEventListener('input', update);
+  editor.addEventListener('scroll', () => { $('#line-gutter').scrollTop = editor.scrollTop; });
   editor.addEventListener('paste', async event => {
     const clipboardText = event.clipboardData?.getData('text/plain') || '';
     const hasImage = [...(event.clipboardData?.items || [])].some(item => item.type.startsWith('image/')) || /!\[[^\]]*\]\(data:image\/(?:png|jpeg|gif|webp);base64,[A-Za-z0-9+/=\s]+\)/.test(clipboardText);
