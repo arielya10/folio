@@ -26,7 +26,7 @@ export function createApp(config, db) {
     contentSecurityPolicy: { directives: {
       defaultSrc: ["'self'"], scriptSrc: ["'self'", ...adScriptSources],
       styleSrc: nativeAdOrigin ? ["'self'", "'unsafe-inline'"] : ["'self'"],
-      imgSrc: nativeAdOrigin ? ["'self'", 'data:', 'https:'] : ["'self'"],
+      imgSrc: nativeAdOrigin ? ["'self'", 'data:', 'https:'] : ["'self'", 'data:'],
       fontSrc: ["'self'"], connectSrc: ["'self'", ...adNetworkSources],
       frameSrc: adNetworkSources,
       formAction: ["'self'"], frameAncestors: ["'none'"], objectSrc: ["'none'"],
